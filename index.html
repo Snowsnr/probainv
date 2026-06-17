@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Decisiones Estudiantiles - ESCOM IA</title>
+    <!-- MathJax para renderizar fórmulas matemáticas -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+
+        :root {
+            --bg-color: #f1f5f9;
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(203, 213, 225, 0.5);
+            --text-main: #1e293b;
+            --text-muted: #475569;
+            --guinda-escom: #7C2B42; /* IPN Guinda */
+            --blue-escom: #1E3A8A;
+            --accent: #0284c7;
+            --research-color: #6366f1; /* Indigo */
+            --money-color: #10b981;
+            --burnout-color: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(124, 43, 66, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(30, 58, 138, 0.08), transparent 25%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .dashboard {
+            width: 100%;
+            max-width: 900px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--blue-escom), var(--guinda-escom));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* StatusBar Section */
+        .status-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            background: rgba(241, 245, 249, 0.6);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .status-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .status-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: #cbd5e1;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .status-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #research-bar { background: var(--research-color); box-shadow: 0 0 8px rgba(99, 102, 241, 0.4); }
+        #money-bar { background: var(--money-color); box-shadow: 0 0 8px rgba(16, 185, 129, 0.4); }
+        #burnout-bar { background: var(--burnout-color); box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+
+        /* Math Box */
+        .math-box {
+            background: #f8fafc;
+            border: 1px dashed var(--blue-escom);
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            font-size: 14px;
+            color: var(--text-main);
+            text-align: center;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+            overflow-x: auto;
+        }
+        
+        .math-box small {
+            color: var(--text-muted);
+            display: block;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        /* Card Section */
+        .event-card {
+            background: #ffffff;
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .event-card.hidden {
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            position: absolute;
+        }
+
+        .event-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--text-main);
+        }
+
+        .event-desc {
+            color: var(--text-muted);
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .btn {
+            background: #ffffff;
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0,0,0,0.02), transparent);
+            transition: 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-fx {
+            display: block;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 5px;
+            font-weight: 400;
+        }
+
+        /* Result Screen */
+        .result-screen {
+            text-align: center;
+            display: none;
+            animation: fadeIn 1s ease forwards;
+            background: #ffffff;
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 40px 30px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-title {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 15px;
+        }
+
+        .result-desc {
+            font-size: 16px;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .btn-restart {
+            background: var(--blue-escom);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.3);
+        }
+        .btn-restart:hover {
+            background: #1e40af;
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="dashboard" id="app">
+        <div class="header">
+            <h1>Simulador de Decisiones ESCOM</h1>
+            <p>Análisis Probabilístico - Ingeniería en IA</p>
+        </div>
+
+        <div class="status-container" id="status-ui">
+            <div class="status-item">
+                <div class="status-header">
+                    <span>Interés en Investigación</span>
+                    <span id="research-val">27%</span>
+                </div>
+                <div class="status-bar-bg">
+                    <div class="status-bar-fill" id="research-bar" style="width: 27%;"></div>
+                </div>
+            </div>
+            <div class="status-item">
+                <div class="status-header">
+                    <span>Estabilidad Económica</span>
+                    <span id="money-val">30%</span>
+                </div>
+                <div class="status-bar-bg">
+                    <div class="status-bar-fill" id="money-bar" style="width: 30%;"></div>
+                </div>
+            </div>
+            <div class="status-item">
+                <div class="status-header">
+                    <span>Saturación / Desgaste</span>
+                    <span id="burnout-val">40%</span>
+                </div>
+                <div class="status-bar-bg">
+                    <div class="status-bar-fill" id="burnout-bar" style="width: 40%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="event-container" class="event-card">
+            <h2 class="event-title" id="e-title">Cargando...</h2>
+            <p class="event-desc" id="e-desc">...</p>
+            
+            <div class="math-box" id="e-math">
+                <!-- Fórmula matemática se inyecta aquí -->
+            </div>
+
+            <div class="options" id="e-options">
+                <!-- Botones inyectados por JS -->
+            </div>
+        </div>
+
+        <div id="result-screen" class="result-screen">
+            <h2 class="result-title" id="r-title">Perfil</h2>
+            <div class="math-box" id="r-math"></div>
+            <p class="result-desc" id="r-desc">Descripción</p>
+            <button class="btn-restart" onclick="initGame()">Volver a Jugar</button>
+        </div>
+
+    </div>
+
+    <script>
+        // Variables de Estado
+        let state = {
+            research: 27, // Empieza bajo (M=2.72)
+            money: 30,
+            burnout: 40
+        };
+
+        let currentEvent = 0;
+
+        // Definición de Eventos con Matemáticas (Probabilidad)
+        const events = [
+            {
+                title: "Semestre 5°: La Tentación Full-Stack",
+                desc: "Una startup te ofrece vacantes de desarrollo usando Next.js y arquitecturas SaaS. Muchos compañeros se van por aquí porque es lo que más rápido da trabajo allá afuera [cite: 16, 90].",
+                math: `<strong>Teorema de Bayes aplicado a la deserción:</strong><br>
+                       $$ P(L \\mid S) = \\frac{P(S \\mid L) P(L)}{P(S)} $$
+                       <small>Donde \\(L\\) = Laborar, \\(S\\) = Oferta SaaS. Alta probabilidad de aceptar empleo web rápido.</small>`,
+                options: [
+                    {
+                        text: "Aceptar el empleo (Desarrollo Web)",
+                        fx: "+20 Dinero, -15 Interés, +10 Desgaste",
+                        action: () => updateState(-15, 20, 10)
+                    },
+                    {
+                        text: "Rechazarlo y enfocarte en modelos IA",
+                        fx: "-10 Dinero, +20 Interés, +15 Desgaste",
+                        action: () => updateState(20, -10, 15)
+                    }
+                ]
+            },
+            {
+                title: "Semestre 6°: Reglas Locales vs Ciencia de Datos",
+                desc: "Te buscan para resolver un problema técnico complejo de facturación electrónica bajo CFDI 4.0 con un sueldo atractivo [cite: 93].",
+                math: `<strong>Costo de Oportunidad (Esperanza Matemática):</strong><br>
+                       $$ E[C] = P(E_i) \\cdot V(E_i) - P(E_j) \\cdot V(E_j) $$
+                       <small>Donde \\(E_i\\) es empleo inmediato y \\(E_j\\) es posgrado futuro. ¿Qué valor maximizas?</small>`,
+                options: [
+                    {
+                        text: "Tomar el trabajo por el beneficio económico",
+                        fx: "+25 Dinero, -20 Interés, +10 Desgaste",
+                        action: () => updateState(-20, 25, 10)
+                    },
+                    {
+                        text: "Seguir investigando en el laboratorio IA",
+                        fx: "-15 Dinero, +25 Interés, +5 Desgaste",
+                        action: () => updateState(25, -15, 5)
+                    }
+                ]
+            },
+            {
+                title: "Semestre 7°: Elección de Optativa Avanzada",
+                desc: "Debes elegir tu línea de especialización técnica. Los datos muestran alta sinergia entre Machine Learning y Visión por Computadora, pero muy baja en Robótica [cite: 198, 217].",
+                math: `<strong>Probabilidad Condicional en el Interés por Posgrado:</strong><br>
+                       $$ P(M \\mid ML) > P(M \\mid R) $$
+                       <small>Donde \\(M\\) = Maestría, \\(ML\\) = Machine Learning, \\(R\\) = Robótica. Elegir ML eleva la probabilidad (\\( r \\approx 0.65 \\)).</small>`,
+                options: [
+                    {
+                        text: "Inscribir Machine Learning / Visión",
+                        fx: "+20 Interés, +15 Desgaste (Alta correlación)",
+                        action: () => updateState(20, 0, 15)
+                    },
+                    {
+                        text: "Inscribir Robótica",
+                        fx: "+5 Interés, +10 Desgaste (Baja motivación)",
+                        action: () => updateState(5, 0, 10)
+                    }
+                ]
+            },
+            {
+                title: "Semestre 8°: La Barrera Financiera y Familiar",
+                desc: "El costo de titulación, manutención y cargas familiares representan un obstáculo crítico para el 52% de la comunidad [cite: 180, 182].",
+                math: `<strong>Probabilidad de Abandono (Intersección de Riesgos):</strong><br>
+                       $$ P(A) = P(F \\cap E) = P(F) \\cdot P(E \\mid F) $$
+                       <small>Donde \\(A\\) = Abandono, \\(F\\) = Presión Familiar, \\(E\\) = Estrés Económico (afecta al 52%).</small>`,
+                options: [
+                    {
+                        text: "Buscar trabajo full-time para mitigar gastos",
+                        fx: "+20 Dinero, -25 Interés, +15 Desgaste",
+                        action: () => updateState(-25, 20, 15)
+                    },
+                    {
+                        text: "Postular a una beca y aguantar el gasto",
+                        fx: "-10 Dinero, +15 Interés, +20 Desgaste",
+                        action: () => updateState(15, -10, 20)
+                    }
+                ]
+            },
+            {
+                title: "Semestre 9°: Incentivo de los Profesores",
+                desc: "Te das cuenta de que las clases son pesadas en teoría pero con poco impacto laboral, y la percepción de los profesores como motivadores al posgrado es la más baja de la escuela (M=2.72) [cite: 89, 198].",
+                math: `<strong>Variable Aleatoria Discreta (Motivación Docente):</strong><br>
+                       $$ E[X] = \\mu = 2.72 $$
+                       <small>Donde \\(X\\) es el nivel de motivación inspirada por profesores (en escala de 1 a 5).</small>`,
+                options: [
+                    {
+                        text: "Ignorar el desencanto y buscar opciones",
+                        fx: "+10 Interés, +10 Desgaste",
+                        action: () => updateState(10, 0, 10)
+                    },
+                    {
+                        text: "Desanimarte y mirar hacia la industria",
+                        fx: "+5 Dinero, -15 Interés, -5 Desgaste",
+                        action: () => updateState(-15, 5, -5)
+                    }
+                ]
+            },
+            {
+                title: "Fase Final: Fuga de Cerebros",
+                desc: "El 60% de los estudiantes prefiere realizar su maestría en el extranjero si decide continuar estudiando [cite: 186].",
+                math: `<strong>Distribución Binomial (Decisión de Destino):</strong><br>
+                       $$ P(D = E) = 0.60 $$
+                       <small>Donde \\(D\\) es la variable de destino y \\(E\\) = Extranjero. Mayoría busca salir por falta de incentivos.</small>`,
+                options: [
+                    {
+                        text: "Aplicar a un posgrado fuera de México",
+                        fx: "-20 Dinero, +30 Interés, +25 Desgaste",
+                        action: () => updateState(30, -20, 25)
+                    },
+                    {
+                        text: "Buscar trabajo local antes que otra cosa",
+                        fx: "+15 Dinero, -10 Interés, +5 Desgaste",
+                        action: () => updateState(-10, 15, 5)
+                    }
+                ]
+            }
+        ];
+
+        function updateState(dResearch, dMoney, dBurnout) {
+            state.research = Math.max(0, Math.min(100, state.research + dResearch));
+            state.money = Math.max(0, Math.min(100, state.money + dMoney));
+            state.burnout = Math.max(0, Math.min(100, state.burnout + dBurnout));
+            
+            renderState();
+
+            // Animación de transición de tarjeta
+            const card = document.getElementById('event-container');
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(10px)';
+            
+            setTimeout(() => {
+                currentEvent++;
+                if(currentEvent < events.length) {
+                    renderEvent();
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                } else {
+                    showResults();
+                }
+            }, 400);
+        }
+
+        function renderState() {
+            document.getElementById('research-bar').style.width = state.research + '%';
+            document.getElementById('money-bar').style.width = state.money + '%';
+            document.getElementById('burnout-bar').style.width = state.burnout + '%';
+
+            document.getElementById('research-val').innerText = Math.round(state.research) + '%';
+            document.getElementById('money-val').innerText = Math.round(state.money) + '%';
+            document.getElementById('burnout-val').innerText = Math.round(state.burnout) + '%';
+
+            // Alerta visual por burnout extremo
+            if(state.burnout > 85) {
+                document.getElementById('burnout-bar').style.background = '#ef4444';
+                document.getElementById('burnout-bar').style.boxShadow = '0 0 15px rgba(239, 68, 68, 0.8)';
+            } else {
+                document.getElementById('burnout-bar').style.background = 'var(--burnout-color)';
+                document.getElementById('burnout-bar').style.boxShadow = '0 0 8px rgba(239, 68, 68, 0.4)';
+            }
+        }
+
+        function renderEvent() {
+            const ev = events[currentEvent];
+            document.getElementById('e-title').innerText = ev.title;
+            document.getElementById('e-desc').innerText = ev.desc;
+            document.getElementById('e-math').innerHTML = ev.math;
+            
+            const optionsContainer = document.getElementById('e-options');
+            optionsContainer.innerHTML = '';
+
+            ev.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn';
+                btn.innerHTML = `${opt.text} <br><span class="btn-fx">${opt.fx}</span>`;
+                btn.onclick = opt.action;
+                optionsContainer.appendChild(btn);
+            });
+
+            // Re-renderizar fórmulas con MathJax
+            if (window.MathJax) {
+                MathJax.typesetPromise([document.getElementById('e-math')]).catch((err) => console.log(err.message));
+            }
+        }
+
+        function showResults() {
+            document.getElementById('event-container').style.display = 'none';
+            document.getElementById('status-ui').style.opacity = '0.5';
+            const resultScreen = document.getElementById('result-screen');
+            resultScreen.style.display = 'block';
+
+            const rTitle = document.getElementById('r-title');
+            const rDesc = document.getElementById('r-desc');
+            const rMath = document.getElementById('r-math');
+
+            // Lógica de perfiles
+            if (state.research > state.money && state.research >= 45) {
+                // Perfil B: Investigador
+                rTitle.innerText = "👨‍🔬 Perfil B: El Investigador Académico";
+                rTitle.style.color = "var(--research-color)";
+                rMath.innerHTML = `<strong>Probabilidad Conjunta (Eventos Independientes):</strong><br>
+                       $$ P(I) = P(E_1) \\cdot P(E_2) \\cdot P(E_3) $$
+                       <small>Donde \\(I\\) = Investigador. Al mantener tu probabilidad alta en cada nodo, el evento conjunto fue exitoso.</small>`;
+                
+                rDesc.innerHTML = `¡Felicidades! A pesar de las presiones financieras y el desgaste mental (<strong>${state.burnout}%</strong>), 
+                lograste mantener tu interés científico en <strong>${state.research}%</strong>. 
+                <br><br>Representas a ese 60% que aspira a continuar su formación teórica en maestría.`;
+            } else {
+                // Perfil A: Sector Privado
+                rTitle.innerText = "💻 Perfil A: Desarrollador (Sector Privado)";
+                rTitle.style.color = "var(--money-color)";
+                rMath.innerHTML = `<strong>Probabilidad del Evento Complementario:</strong><br>
+                       $$ P(P^c) = 1 - P(P) $$
+                       <small>Donde \\(P\\) = Posgrado y \\(P^c\\) es el evento complementario. Tu vector de decisiones hizo tender \\(P(P)\\) a 0.</small>`;
+                
+                rDesc.innerHTML = `La industria te ha absorbido. Priorizaste la estabilidad económica (<strong>${state.money}%</strong>). 
+                <br><br>Reflejas la realidad del 92% de los alumnos motivados por el salario. El mercado demanda talento, pero la academia ha perdido a un candidato.`;
+            }
+
+            if (state.burnout >= 80) {
+                rDesc.innerHTML += `<br><br><span style="color:var(--burnout-color)">⚠️ Nota: Nivel crítico de saturación. \\( P(B) \\approx 0.99 \\) (donde \\(B\\) = Burnout Clínico)</span>`;
+            }
+
+            // Re-renderizar fórmulas con MathJax en la pantalla final
+            if (window.MathJax) {
+                MathJax.typesetPromise([document.getElementById('result-screen')]).catch((err) => console.log(err.message));
+            }
+        }
+
+        function initGame() {
+            state = { research: 27, money: 30, burnout: 40 };
+            currentEvent = 0;
+            
+            document.getElementById('event-container').style.display = 'block';
+            document.getElementById('event-container').style.opacity = '1';
+            document.getElementById('event-container').style.transform = 'translateY(0)';
+            
+            document.getElementById('status-ui').style.opacity = '1';
+            document.getElementById('result-screen').style.display = 'none';
+
+            renderState();
+            renderEvent();
+        }
+
+        // Iniciar
+        initGame();
+
+    </script>
+</body>
+</html>
